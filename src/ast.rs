@@ -10,7 +10,7 @@ pub type Stage = Vec<StageVar>;
 pub enum Term {
     Int(i32),
     Var(TermVar),
-    Lam(TermVar, Box<Term>),
+    Lam(TermVar, Box<Type>, Box<Term>),
     App(Box<Term>, Box<Term>),
     Code(StageVar, Box<Term>),
     Escape(StageVar, Box<Term>),
@@ -20,6 +20,17 @@ pub enum Term {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Kind {
+    ProperType,
+    TypeOperation(TermVar, Box<Type>, Box<Kind>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
-    NotImplemented,
+    Int,
+    Vector,
+    DepFun(TermVar, Box<Type>, Box<Type>),
+    App(Box<Type>, Box<Term>),
+    Code(StageVar, Box<Type>),
+    StageBind(StageVar, Box<Type>),
 }
