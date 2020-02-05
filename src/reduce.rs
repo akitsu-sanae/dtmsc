@@ -38,6 +38,21 @@ pub fn is_value(term: &Term, mut stage: Stage) -> bool {
     }
 }
 
-pub fn reduce(mut _term: Term) -> Term {
+fn reduce_rule(term: Term, A: Stage, B: Option<StageVar>) -> Term {
+    match term {
+        Term::App(box Term::Lam(x, _, box t1), box t2) if B.is_none() && is_value(&t2, vec![]) => {
+            t1.subst_term(x, t2)
+        }
+        Term::StageApp(box Term::StageLam(a, box t), stage)
+            if B.is_none() && is_value(&t, vec![]) =>
+        {
+            t.subst_stage(a, A)
+        }
+        Term::Escape(a, box Term::Code(a_, box t)) if a == a_ && is_value(&t, vec![a.clone()]) => t,
+        _ => term,
+    }
+}
+
+pub fn reduce(mut _term: Term, _A: Stage, _B: Option<StageVar>) -> Term {
     unimplemented!()
 }

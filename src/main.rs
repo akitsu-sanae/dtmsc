@@ -1,5 +1,6 @@
 #![feature(box_patterns)]
 #![feature(slice_patterns)]
+#![feature(bind_by_move_pattern_guards)]
 
 extern crate peg;
 
@@ -18,7 +19,7 @@ fn main() {
         Ok(mut term) => {
             println!("input term: {:?}", term);
             while !reduce::is_value(&term, vec![]) {
-                term = reduce::reduce(term);
+                term = reduce::reduce(term, vec![], None);
                 println!("=> {:?}", term);
             }
         }
