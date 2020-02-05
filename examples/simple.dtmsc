@@ -1,0 +1,2 @@
+(lam x:int. lam y:vector 10. x) 42
+
