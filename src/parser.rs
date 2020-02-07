@@ -1,5 +1,17 @@
 use crate::ast::*;
 use peg;
+use std::sync::Mutex;
+
+lazy_static! {
+    static ref IDENT_COUNT: Mutex<i32> = Mutex::new(0);
+}
+
+fn fresh_ident() -> String {
+    let ref mut count = *IDENT_COUNT.lock().unwrap();
+    let res = format!("<dummy{}>", count);
+    *count = *count + 1;
+    res
+}
 
 peg::parser!(grammar parser() for str {
 
@@ -31,7 +43,14 @@ pub rule kind() -> Kind
   }
 
 pub rule type_() -> Type
-  = app_type()
+  = arrow_type()
+
+pub rule arrow_type() -> Type
+  = from:app_type() ARROW() to:arrow_type() {
+    Type::DepFun(TermVar(fresh_ident()), Box::new(from), Box::new(to))
+  }
+  / app_type()
+
 
 rule app_type() -> Type
   = ty:factor_type() t:term() { Type::App(Box::new(ty), Box::new(t)) }
@@ -79,6 +98,7 @@ rule COMMA() = "," __
 rule PI() = "Pi" __
 rule AST() = "*" __
 rule COLON() = ":" __
+rule ARROW() = "->" __
 });
 
 pub use parser::*;
@@ -194,6 +214,14 @@ fn type_test() {
                 Box::new(Type::Vector),
                 Box::new(Term::Var(TermVar("n".to_string())))
             )),
+            Box::new(Type::Int)
+        ))
+    );
+    assert_eq!(
+        type_("int -> int"),
+        Ok(Type::DepFun(
+            TermVar("<dummy0>".to_string()),
+            Box::new(Type::Int),
             Box::new(Type::Int)
         ))
     );

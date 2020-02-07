@@ -2,6 +2,8 @@
 #![feature(slice_patterns)]
 #![feature(bind_by_move_pattern_guards)]
 
+#[macro_use]
+extern crate lazy_static;
 extern crate peg;
 
 mod ast;
