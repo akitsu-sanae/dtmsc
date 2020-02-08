@@ -25,8 +25,8 @@ fn main() {
             let stdout = stdout();
             let mut out = BufWriter::new(stdout.lock());
             writeln!(out, "input term: {}", term).unwrap();
-            while !reduce::is_value(&term, vec![]) {
-                term = reduce::reduce(term, vec![], None);
+            while !reduce::is_value(&term, &vec![]) {
+                term = reduce::reduce(term, vec![], None).unwrap();
                 writeln!(out, "=> {}", term).unwrap();
             }
         }
