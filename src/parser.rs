@@ -16,7 +16,17 @@ fn fresh_ident() -> String {
 peg::parser!(grammar parser() for str {
 
 pub rule term() -> Term
-    = apply_term()
+    = binop_term()
+
+rule binop_term() -> Term = precedence!{
+  x:(@) PLUS() y:@ { Term::BinOp(BinOp::Add, Box::new(x), Box::new(y)) }
+  x:(@) MINUS() y:@ { Term::BinOp(BinOp::Sub, Box::new(x), Box::new(y)) }
+  --
+  x:(@) AST() y:@ { Term::BinOp(BinOp::Mult, Box::new(x), Box::new(y)) }
+  x:(@) SLASH() y:@ { Term::BinOp(BinOp::Div, Box::new(x), Box::new(y)) }
+  --
+  t:apply_term() { t }
+}
 
 rule apply_term() -> Term
     = t1:factor_term() t2:apply_term() { Term::App(Box::new(t1), Box::new(t2)) }
@@ -66,19 +76,19 @@ rule factor_type() -> Type
   }
 
 rule stage() -> Vec<StageVar>
-  = LPAREN() head:ident() tail:(COMMA() i:ident() {i})* RPAREN() {
+  = LBRACKET() head:ident() tail:(COMMA() i:ident() {i})* RBRACKET() {
       let mut stage: Vec<_> = tail.into_iter().map(|ident| StageVar(ident)).collect();
       stage.insert(0, StageVar(head));
       stage
   }
-  / LPAREN() RPAREN() { vec![] }
+  / LBRACKET() RBRACKET() { vec![] }
 
 rule number() -> i32
     = n:$(['0'..='9']+) __ { n.parse().unwrap() }
 
 rule ident() -> String
     = s:$(quiet!{['a'..='z'|'A'..='Z']['a'..='z'|'A'..='Z'|'0'..='9'|'_']*}) __ { s.to_string() }
-    / expected!("identifier")
+    / expected!("<identifier>")
 
 rule __() = [' '|'\t'|'\r'|'\n']*
 
@@ -86,19 +96,27 @@ rule INT() = "int" __
 rule VECTOR() = "vector" __
 rule FORALL() = "forall" __
 rule LAM() = "lam" __
-rule DOT() = "." __
-rule CODE() = "|>" __
-rule ESCAPE() = "<|" __
 rule STAGE_LAM() = "LAM" __
-rule CSP() = "%" __
-rule AT() = "@" __
-rule LPAREN() = "(" __
-rule RPAREN() = ")" __
-rule COMMA() = "," __
 rule PI() = "Pi" __
+
+rule PLUS() = "+" __
+rule MINUS() = "-" __
 rule AST() = "*" __
+rule SLASH() = "/" __
+
+rule DOT() = "." __
+rule COMMA() = "," __
 rule COLON() = ":" __
 rule ARROW() = "->" __
+rule CODE() = "|>" __
+rule ESCAPE() = "<|" __
+rule CSP() = "%" __
+rule AT() = "@" __
+
+rule LPAREN() = "(" __
+rule RPAREN() = ")" __
+rule LBRACKET() = "{" __
+rule RBRACKET() = "}" __
 });
 
 pub use parser::*;

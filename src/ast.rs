@@ -6,9 +6,18 @@ pub struct StageVar(pub String);
 
 pub type Stage = Vec<StageVar>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BinOp {
+    Add,
+    Sub,
+    Mult,
+    Div,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Term {
     Int(i32),
+    BinOp(BinOp, Box<Term>, Box<Term>),
     Var(TermVar),
     Lam(TermVar, Box<Type>, Box<Term>),
     App(Box<Term>, Box<Term>),
@@ -23,6 +32,11 @@ impl Term {
     pub fn subst_term(self, x: TermVar, t: Term) -> Term {
         match self {
             Term::Var(x_) if x == x_ => t,
+            Term::BinOp(op, box t1, box t2) => Term::BinOp(
+                op,
+                Box::new(t1.subst_term(x.clone(), t.clone())),
+                Box::new(t2.subst_term(x, t)),
+            ),
             Term::Lam(x_, box ty, box t_) if x != x_ => {
                 Term::Lam(x_, Box::new(ty), Box::new(t_.subst_term(x, t)))
             }
@@ -44,6 +58,11 @@ impl Term {
     }
     pub fn subst_stage(self, a: StageVar, A: Stage) -> Term {
         match self {
+            Term::BinOp(op, box t1, box t2) => Term::BinOp(
+                op,
+                Box::new(t1.subst_stage(a.clone(), A.clone())),
+                Box::new(t2.subst_stage(a, A)),
+            ),
             Term::Lam(x, box ty, box t) => {
                 Term::Lam(x, Box::new(ty), Box::new(t.subst_stage(a, A)))
             }
