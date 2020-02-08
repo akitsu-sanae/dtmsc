@@ -13,6 +13,40 @@ fn fresh_ident() -> String {
     res
 }
 
+pub fn pick_token(buf: &str) -> String {
+    let buf = buf.trim_start();
+    let single_char_tokens = vec!['.', '%', '@', '(', ')', '{', '}', ',', '*', ':'];
+    let double_char_tokens = ["|>", "<|", "->"];
+    let mut chars = buf.chars();
+    if let Some(c) = chars.next() {
+        if c.is_alphabetic() {
+            // identifier
+            let mut ident = c.to_string();
+            while let Some(c) = chars.next() {
+                if c.is_alphanumeric() || c == '_' {
+                    ident.push(c);
+                } else {
+                    break;
+                }
+            }
+            ident
+        } else if single_char_tokens.contains(&c) {
+            c.to_string()
+        } else if let Some(c2) = chars.next() {
+            let token = format!("{}{}", c, c2);
+            if double_char_tokens.contains(&token.as_str()) {
+                token
+            } else {
+                format!("<unknown token starting with {}>", c)
+            }
+        } else {
+            format!("<unknown token starting with {}>", c)
+        }
+    } else {
+        "<eof>".to_string()
+    }
+}
+
 peg::parser!(grammar parser() for str {
 
 pub rule term() -> Term

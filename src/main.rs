@@ -13,7 +13,7 @@ mod reduce;
 fn main() {
     use std::io::Read;
     let filename = ::std::env::args().nth(1).expect("filename required");
-    let mut f = ::std::fs::File::open(filename).expect("cannot open file");
+    let mut f = ::std::fs::File::open(&filename).expect("cannot open file");
     let mut buf = String::new();
     f.read_to_string(&mut buf).expect("cannot read file");
 
@@ -25,6 +25,20 @@ fn main() {
                 println!("=> {:?}", term);
             }
         }
-        Err(err) => eprintln!("{:?}", err),
+        Err(err) => {
+            eprintln!(
+                "\x1B[31mparsing error\x1B[0m at {}:{}:{}",
+                filename, err.location.line, err.location.column
+            );
+            eprintln!("  expected: [{}]", {
+                let mut tokens = err.expected.tokens();
+                let head = tokens.next().unwrap().to_string();
+                tokens.fold(head, |acc, expected| format!("{}, {}", acc, expected))
+            });
+            eprintln!(
+                "  found   : \"{}\"",
+                parser::pick_token(&buf[err.location.offset..])
+            );
+        }
     }
 }
