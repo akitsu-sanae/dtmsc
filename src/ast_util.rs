@@ -29,28 +29,41 @@ impl Term {
         }
     }
     pub fn subst_stage(self, a: StageVar, A: Stage) -> Term {
+        use Term::*;
         match self {
-            Term::BinOp(op, box t1, box t2) => Term::BinOp(
+            BinOp(op, box t1, box t2) => BinOp(
                 op,
                 Box::new(t1.subst_stage(a.clone(), A.clone())),
                 Box::new(t2.subst_stage(a, A)),
             ),
-            Term::Lam(x, box ty, box t) => {
-                Term::Lam(x, Box::new(ty), Box::new(t.subst_stage(a, A)))
-            }
-            Term::App(box t1, box t2) => Term::App(
+            Lam(x, box ty, box t) => Lam(x, Box::new(ty), Box::new(t.subst_stage(a, A))),
+            App(box t1, box t2) => App(
                 Box::new(t1.subst_stage(a.clone(), A.clone())),
                 Box::new(t2.subst_stage(a, A)),
             ),
-            Term::Code(stage_var, box t) => Term::Code(stage_var, Box::new(t.subst_stage(a, A))),
-            Term::Escape(stage_var, box t) => {
-                Term::Escape(stage_var, Box::new(t.subst_stage(a, A)))
+            Code(stage_var, box t) if stage_var == a => {
+                let t = t.subst_stage(a, A.clone());
+                A.into_iter()
+                    .rev()
+                    .fold(t, |acc, stage_var| Code(stage_var, Box::new(acc)))
             }
-            Term::StageLam(stage_var, box t_) => {
-                Term::StageLam(stage_var, Box::new(t_.subst_stage(a, A)))
+            Code(stage_var, box t) => Code(stage_var, Box::new(t.subst_stage(a, A))),
+            Escape(stage_var, box t) if stage_var == a => {
+                let t = t.subst_stage(a, A.clone());
+                A.into_iter()
+                    .fold(t, |acc, stage_var| Escape(stage_var, Box::new(acc)))
             }
-            Term::StageApp(box t, stage) => Term::StageApp(Box::new(t.subst_stage(a, A)), stage),
-            Term::CSP(stage_var, box t) => Term::CSP(stage_var, Box::new(t.subst_stage(a, A))),
+            Escape(stage_var, box t) => Escape(stage_var, Box::new(t.subst_stage(a, A))),
+            StageLam(stage_var, box t_) if stage_var != a => {
+                StageLam(stage_var, Box::new(t_.subst_stage(a, A)))
+            }
+            StageApp(box t, stage) => StageApp(Box::new(t.subst_stage(a, A)), stage),
+            CSP(stage_var, box t) if stage_var == a => {
+                let t = t.subst_stage(a, A.clone());
+                A.into_iter()
+                    .fold(t, |acc, stage_var| Escape(stage_var, Box::new(acc)))
+            }
+            CSP(stage_var, box t) => CSP(stage_var, Box::new(t.subst_stage(a, A))),
             _ => self,
         }
     }
