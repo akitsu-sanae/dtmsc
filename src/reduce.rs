@@ -11,7 +11,7 @@ pub fn is_value(term: &Term, stage: &Stage) -> bool {
         }
     } else {
         match term {
-            Term::Var(_) => true,
+            Term::Int(_) | Term::Var(_) => true,
             Term::Lam(_, _, box ref t) => is_value(t, &stage),
             Term::App(box ref t1, box ref t2) => is_value(t1, &stage) && is_value(t2, &stage),
             Term::Code(ref stage_var, box ref t) => {
@@ -51,6 +51,7 @@ fn calc_binop(op: BinOp, lhs: i32, rhs: i32) -> i32 {
 
 pub fn reduce(term: Term, A: Stage, B: Option<StageVar>) -> Result<Term, String> {
     use Term::*;
+    let no_reduction_err = Err(format!("no reduction for {} under {:?}", term, A));
     match term {
         BinOp(op, box t1, box t2) if is_value(&t1, &A) && is_value(&t2, &A) => match (t1, t2) {
             (Int(lhs), Int(rhs)) => Ok(Int(calc_binop(op, lhs, rhs))),
@@ -85,13 +86,37 @@ pub fn reduce(term: Term, A: Stage, B: Option<StageVar>) -> Result<Term, String>
         {
             Ok(t)
         }
-        Escape(stage_var1, box t) => Ok(Escape(stage_var1, Box::new(reduce(t, A, B)?))),
+        Escape(stage_var1, box t) => {
+            if let [stage_.., alpha] = A.as_slice() {
+                if alpha == &stage_var1 {
+                    Ok(Escape(stage_var1, Box::new(reduce(t, stage_.to_vec(), B)?)))
+                } else {
+                    no_reduction_err
+                }
+            } else {
+                no_reduction_err
+            }
+        }
 
         StageLam(stage_var, box t) => Ok(StageLam(stage_var, Box::new(reduce(t, A, B)?))),
-        Code(stage_var, box t) => Ok(Code(stage_var, Box::new(reduce(t, A, B)?))),
-        CSP(stage_var, box t) => Ok(CSP(stage_var, Box::new(reduce(t, A, B)?))),
+        Code(stage_var, box t) => {
+            let mut stage = A;
+            stage.push(stage_var.clone());
+            Ok(Code(stage_var, Box::new(reduce(t, stage, B)?)))
+        }
+        CSP(stage_var, box t) => {
+            if let [stage_.., alpha] = A.as_slice() {
+                if alpha == &stage_var {
+                    Ok(CSP(stage_var, Box::new(reduce(t, stage_.to_vec(), B)?)))
+                } else {
+                    no_reduction_err
+                }
+            } else {
+                no_reduction_err
+            }
+        }
 
         t if is_value(&t, &A) => Err(format!("{} is already value", t)),
-        t => Err(format!("no reduction for {}", t)),
+        _ => no_reduction_err,
     }
 }
