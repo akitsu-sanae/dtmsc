@@ -7,6 +7,8 @@ extern crate lazy_static;
 extern crate peg;
 
 mod ast;
+mod ast_printer;
+mod ast_util;
 mod parser;
 mod reduce;
 
@@ -19,10 +21,13 @@ fn main() {
 
     match parser::term(&buf) {
         Ok(mut term) => {
-            println!("input term: {:?}", term);
+            use std::io::{stdout, BufWriter, Write};
+            let stdout = stdout();
+            let mut out = BufWriter::new(stdout.lock());
+            writeln!(out, "input term: {}", term).unwrap();
             while !reduce::is_value(&term, vec![]) {
                 term = reduce::reduce(term, vec![], None);
-                println!("=> {:?}", term);
+                writeln!(out, "=> {}", term).unwrap();
             }
         }
         Err(err) => {
