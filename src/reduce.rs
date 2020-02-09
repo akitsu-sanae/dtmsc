@@ -1,33 +1,37 @@
 use crate::ast::*;
 
 pub fn is_value(term: &Term, stage: &Stage) -> bool {
+    use Term::*;
     let mut stage = stage.clone();
     if stage.is_empty() {
         match term {
-            Term::Int(_) | Term::Lam(_, _, _) => true,
-            Term::Code(ref stage_var, box ref t) => is_value(t, &vec![stage_var.clone()]),
-            Term::StageLam(_, box ref t) => is_value(t, &vec![]),
+            Int(_) | Lam(_, _, _) => true,
+            Code(ref stage_var, box ref t) => is_value(t, &vec![stage_var.clone()]),
+            StageLam(_, box ref t) => is_value(t, &vec![]),
             _ => false,
         }
     } else {
         match term {
-            Term::Int(_) | Term::Var(_) => true,
-            Term::Lam(_, _, box ref t) => is_value(t, &stage),
-            Term::App(box ref t1, box ref t2) => is_value(t1, &stage) && is_value(t2, &stage),
-            Term::Code(ref stage_var, box ref t) => {
+            Int(_) | Var(_) => true,
+            Lam(_, _, box ref t) => is_value(t, &stage),
+            App(box ref t1, box ref t2) | BinOp(_, box ref t1, box ref t2) => {
+                is_value(t1, &stage) && is_value(t2, &stage)
+            }
+            Code(ref stage_var, box ref t) => {
                 stage.push(stage_var.clone());
                 is_value(t, &stage)
             }
-            Term::StageLam(_, box ref t) => is_value(t, &stage),
-            Term::StageApp(box ref t, _) => is_value(t, &stage),
-            Term::Escape(ref stage_var, box ref t) => {
+            StageLam(_, box ref t) => is_value(t, &stage),
+            StageApp(box ref t, _) => is_value(t, &stage),
+            Escape(ref stage_var, box ref t) => {
                 if let [stage_.., alpha] = stage.as_slice() {
-                    alpha == stage_var && is_value(t, &stage_.to_vec())
+                    let stage_ = stage_.to_vec();
+                    alpha == stage_var && is_value(t, &stage_.to_vec()) && !stage_.is_empty()
                 } else {
                     false
                 }
             }
-            Term::CSP(ref stage_var, box ref t) => {
+            CSP(ref stage_var, box ref t) => {
                 if let [stage_.., alpha] = stage.as_slice() {
                     alpha == stage_var && is_value(t, &stage_.to_vec())
                 } else {
