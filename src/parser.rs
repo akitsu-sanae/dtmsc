@@ -165,43 +165,43 @@ fn term_test() {
         Ok(Term::Lam(
             TermVar("x".to_string()),
             Box::new(Type::Int),
-            Box::new(Term::Int(42))
+            Box::new(Term::Const(Literal::Int(42)))
         ))
     );
     assert_eq!(
         term("|>a. 42"),
         Ok(Term::Code(
             StageVar("a".to_string()),
-            Box::new(Term::Int(42))
+            Box::new(Term::Const(Literal::Int(42)))
         ))
     );
     assert_eq!(
         term("<|a. 42"),
         Ok(Term::Escape(
             StageVar("a".to_string()),
-            Box::new(Term::Int(42))
+            Box::new(Term::Const(Literal::Int(42)))
         ))
     );
     assert_eq!(
         term("LAM a. 42"),
         Ok(Term::StageLam(
             StageVar("a".to_string()),
-            Box::new(Term::Int(42))
+            Box::new(Term::Const(Literal::Int(42)))
         ))
     );
     assert_eq!(
         term("%a. 42"),
         Ok(Term::CSP(
             StageVar("a".to_string()),
-            Box::new(Term::Int(42))
+            Box::new(Term::Const(Literal::Int(42)))
         ))
     );
-    assert_eq!(term("123"), Ok(Term::Int(123)));
+    assert_eq!(term("123"), Ok(Term::Const(Literal::Int(123))));
     assert_eq!(
         term("f 42"),
         Ok(Term::App(
             Box::new(Term::Var(TermVar("f".to_string()))),
-            Box::new(Term::Int(42))
+            Box::new(Term::Const(Literal::Int(42)))
         ))
     );
 }
@@ -246,8 +246,11 @@ fn type_test() {
         ))
     );
     assert_eq!(
-        type_("vector 42"),
-        Ok(Type::App(Box::new(Type::Vector), Box::new(Term::Int(42))))
+        type_("vector[42]"),
+        Ok(Type::App(
+            Box::new(Type::Vector),
+            Box::new(Term::Const(Literal::Int(42)))
+        ))
     );
     assert_eq!(
         type_("|>a. int"),
@@ -262,7 +265,7 @@ fn type_test() {
     );
 
     assert_eq!(
-        type_("Pi x:vector n. int"),
+        type_("Pi x:vector[n]. int"),
         Ok(Type::DepFun(
             TermVar("x".to_string()),
             Box::new(Type::App(
