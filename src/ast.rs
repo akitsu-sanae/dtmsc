@@ -7,7 +7,8 @@ pub struct StageVar(pub String);
 pub type Stage = Vec<StageVar>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BinOp {
+pub enum Literal {
+    Int(i32),
     Add,
     Sub,
     Mult,
@@ -16,8 +17,7 @@ pub enum BinOp {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Term {
-    Int(i32),
-    BinOp(BinOp, Box<Term>, Box<Term>),
+    Const(Literal),
     Var(TermVar),
     Lam(TermVar, Box<Type>, Box<Term>),
     App(Box<Term>, Box<Term>),

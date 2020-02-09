@@ -1,19 +1,16 @@
 use crate::ast::*;
 use std::fmt;
 
-impl fmt::Display for BinOp {
+impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use BinOp::*;
-        write!(
-            f,
-            "{}",
-            match self {
-                Add => "+",
-                Sub => "-",
-                Mult => "*",
-                Div => "/",
-            }
-        )
+        use Literal::*;
+        match self {
+            Int(ref n) => write!(f, "{}", n),
+            Add => write!(f, "+"),
+            Sub => write!(f, "-"),
+            Mult => write!(f, "*"),
+            Div => write!(f, "/"),
+        }
     }
 }
 
@@ -21,13 +18,12 @@ impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Term::*;
         match self {
-            Int(n) => write!(f, "{}", n),
-            BinOp(op, box ref t1, box ref t2) => write!(f, "({} {} {})", t1, op, t2),
+            Const(lit) => write!(f, "{}", lit),
             Var(TermVar(ref ident)) => write!(f, "{}", ident),
             Lam(TermVar(ref ident), box ref ty, box ref t) => {
                 write!(f, "(lam {}: {}. {})", ident, ty, t)
             }
-            App(box ref t1, box ref t2) => write!(f, "{} {}", t1, t2),
+            App(box ref t1, box ref t2) => write!(f, "({} {})", t1, t2),
             Code(StageVar(ref ident), box ref t) => write!(f, "|>{}. {}", ident, t),
             Escape(StageVar(ref ident), box ref t) => write!(f, "<|{}. {}", ident, t),
             StageLam(StageVar(ref ident), box ref t) => write!(f, "(LAM {}. {})", ident, t),
@@ -40,7 +36,7 @@ impl fmt::Display for Term {
                 } else {
                     String::new()
                 };
-                write!(f, "{}@{{{}}}", t, stage)
+                write!(f, "({}@{{{}}})", t, stage)
             }
             CSP(StageVar(ref ident), box ref t) => write!(f, "%{}. {}", ident, t),
         }

@@ -4,11 +4,6 @@ impl Term {
     pub fn subst_term(self, x: TermVar, t: Term) -> Term {
         match self {
             Term::Var(x_) if x == x_ => t,
-            Term::BinOp(op, box t1, box t2) => Term::BinOp(
-                op,
-                Box::new(t1.subst_term(x.clone(), t.clone())),
-                Box::new(t2.subst_term(x, t)),
-            ),
             Term::Lam(x_, box ty, box t_) if x != x_ => {
                 Term::Lam(x_, Box::new(ty), Box::new(t_.subst_term(x, t)))
             }
@@ -31,11 +26,6 @@ impl Term {
     pub fn subst_stage(self, a: StageVar, A: Stage) -> Term {
         use Term::*;
         match self {
-            BinOp(op, box t1, box t2) => BinOp(
-                op,
-                Box::new(t1.subst_stage(a.clone(), A.clone())),
-                Box::new(t2.subst_stage(a, A)),
-            ),
             Lam(x, box ty, box t) => Lam(x, Box::new(ty), Box::new(t.subst_stage(a, A))),
             App(box t1, box t2) => App(
                 Box::new(t1.subst_stage(a.clone(), A.clone())),

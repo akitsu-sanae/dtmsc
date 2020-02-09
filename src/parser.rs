@@ -50,22 +50,19 @@ pub fn pick_token(buf: &str) -> String {
 peg::parser!(grammar parser() for str {
 
 pub rule term() -> Term
-    = binop_term()
+    = apply_stage_term()
 
-rule binop_term() -> Term = precedence!{
-  x:(@) PLUS() y:@ { Term::BinOp(BinOp::Add, Box::new(x), Box::new(y)) }
-  x:(@) MINUS() y:@ { Term::BinOp(BinOp::Sub, Box::new(x), Box::new(y)) }
-  --
-  x:(@) AST() y:@ { Term::BinOp(BinOp::Mult, Box::new(x), Box::new(y)) }
-  x:(@) SLASH() y:@ { Term::BinOp(BinOp::Div, Box::new(x), Box::new(y)) }
-  --
-  t:apply_term() { t }
-}
+rule apply_stage_term() -> Term
+    = t:apply_term() stages:(AT() stage:stage() {stage})* {
+        stages.into_iter().fold(t, |acc, stage| Term::StageApp(Box::new(acc), stage))
+    }
 
 rule apply_term() -> Term
-    = t1:factor_term() t2:apply_term() { Term::App(Box::new(t1), Box::new(t2)) }
-    / t1:factor_term() AT() stage:stage() { Term::StageApp(Box::new(t1), stage) }
-    / factor_term()
+    = ts:factor_term()+ {
+        let mut ts = ts;
+        let head = ts.remove(0);
+        ts.into_iter().fold(head, |acc, t| Term::App(Box::new(acc), Box::new(t)))
+    }
 
 rule factor_term() -> Term
     = LAM() ident:ident() COLON() ty:type_() DOT() t:term() { Term::Lam(TermVar(ident), Box::new(ty), Box::new(t)) }
@@ -73,7 +70,11 @@ rule factor_term() -> Term
     / ESCAPE() ident:ident() DOT() t:term() { Term::Escape(StageVar(ident), Box::new(t)) }
     / STAGE_LAM() ident:ident() DOT() t:term() { Term::StageLam(StageVar(ident), Box::new(t)) }
     / CSP() ident:ident() DOT() t:term() {Term::CSP(StageVar(ident), Box::new(t))}
-    / n:number() { Term::Int(n) }
+    / n:number() { Term::Const(Literal::Int(n)) }
+    / PLUS() { Term::Const(Literal::Add) }
+    / MINUS() { Term::Const(Literal::Sub) }
+    / AST() { Term::Const(Literal::Mult) }
+    / SLASH() { Term::Const(Literal::Div) }
     / ident:ident() { Term::Var(TermVar(ident)) }
     / paren_term()
 
@@ -97,7 +98,7 @@ pub rule arrow_type() -> Type
 
 
 rule app_type() -> Type
-  = ty:factor_type() t:term() { Type::App(Box::new(ty), Box::new(t)) }
+  = ty:factor_type() LBRACKET() t:term() RBRACKET() { Type::App(Box::new(ty), Box::new(t)) }
   / factor_type()
 
 rule factor_type() -> Type
@@ -110,12 +111,12 @@ rule factor_type() -> Type
   }
 
 rule stage() -> Vec<StageVar>
-  = LBRACKET() head:ident() tail:(COMMA() i:ident() {i})* RBRACKET() {
+  = LBRACE() head:ident() tail:(COMMA() i:ident() {i})* RBRACE() {
       let mut stage: Vec<_> = tail.into_iter().map(|ident| StageVar(ident)).collect();
       stage.insert(0, StageVar(head));
       stage
   }
-  / LBRACKET() RBRACKET() { vec![] }
+  / LBRACE() RBRACE() { vec![] }
 
 rule number() -> i32
     = n:$(['0'..='9']+) __ { n.parse().unwrap() }
@@ -149,8 +150,10 @@ rule AT() = "@" __
 
 rule LPAREN() = "(" __
 rule RPAREN() = ")" __
-rule LBRACKET() = "{" __
-rule RBRACKET() = "}" __
+rule LBRACE() = "{" __
+rule RBRACE() = "}" __
+rule LBRACKET() = "[" __
+rule RBRACKET() = "]" __
 });
 
 pub use parser::*;
