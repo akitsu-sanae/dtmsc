@@ -1,6 +1,5 @@
 #![feature(box_patterns)]
-#![feature(slice_patterns)]
-#![feature(bind_by_move_pattern_guards)]
+#![feature(exclusive_range_pattern)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -25,8 +24,8 @@ fn main() {
             let stdout = stdout();
             let mut out = BufWriter::new(stdout.lock());
             writeln!(out, "input term: {}", term).unwrap();
-            while !reduce::is_value(&term, &vec![]) {
-                term = match reduce::reduce(term) {
+            while !term.is_value_at(&vec![]) {
+                term = match term.reduce() {
                     Ok(term) => term,
                     Err(msg) => {
                         eprintln!("{}", msg);

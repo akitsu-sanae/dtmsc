@@ -1,43 +1,75 @@
 use crate::ast::*;
 
-pub fn is_value(term: &Term, stage: &Stage) -> bool {
-    use Term::*;
-    let mut stage = stage.clone();
-    if stage.is_empty() {
-        match term {
-            Const(_) | Lam(_, _, _) => true,
-            Code(ref stage_var, box ref t) => is_value(t, &vec![stage_var.clone()]),
-            StageLam(_, box ref t) => is_value(t, &vec![]),
-            _ => false,
-        }
-    } else {
-        match term {
-            Const(_) => true,
-            Lam(_, _, box ref t) => is_value(t, &stage),
-            App(box ref t1, box ref t2) => is_value(t1, &stage) && is_value(t2, &stage),
-            Code(ref stage_var, box ref t) => {
-                stage.push(stage_var.clone());
-                is_value(t, &stage)
+impl Term {
+    pub fn is_value_at(&self, stage: &Stage) -> bool {
+        use Term::*;
+        let mut stage = stage.clone();
+        if stage.is_empty() {
+            match self {
+                Const(_) | Lam(_, _, _) => true,
+                Code(ref stage_var, box ref t) => t.is_value_at(&vec![stage_var.clone()]),
+                StageLam(_, box ref t) => t.is_value_at(&vec![]),
+                _ => false,
             }
-            StageLam(_, box ref t) => is_value(t, &stage),
-            StageApp(box ref t, _) => is_value(t, &stage),
-            Escape(ref stage_var, box ref t) => {
-                if let [stage_.., alpha] = stage.as_slice() {
-                    let stage_ = stage_.to_vec();
-                    alpha == stage_var && is_value(t, &stage_.to_vec())
-                } else {
-                    false
+        } else {
+            match self {
+                Const(_) => true,
+                Lam(_, _, box ref t) => t.is_value_at(&stage),
+                App(box ref t1, box ref t2) => t1.is_value_at(&stage) && t2.is_value_at(&stage),
+                Code(ref stage_var, box ref t) => {
+                    stage.push(stage_var.clone());
+                    t.is_value_at(&stage)
                 }
-            }
-            CSP(ref stage_var, box ref t) => {
-                if let [stage_.., alpha] = stage.as_slice() {
-                    alpha == stage_var && is_value(t, &stage_.to_vec())
-                } else {
-                    false
+                StageLam(_, box ref t) => t.is_value_at(&stage),
+                StageApp(box ref t, _) => t.is_value_at(&stage),
+                Escape(ref stage_var, box ref t) | CSP(ref stage_var, box ref t) => {
+                    if !stage.is_empty() {
+                        let stage_ = &stage[..(stage.len() - 1)];
+                        let alpha = &stage[stage.len() - 1];
+                        alpha == stage_var && t.is_value_at(&stage_.to_vec())
+                    } else {
+                        false
+                    }
                 }
+                _ => false,
             }
-            _ => false,
         }
+    }
+
+    pub fn reduce(self) -> Result<Term, String> {
+        use Term::*;
+        reduce_context(self, vec![], None, |term, hole_stage| {
+            let no_reduction_err = Err(format!("no reduction for {}", term));
+            match term {
+                App(
+                    box App(box Const(op), box Const(Literal::Int(n1))),
+                    box Const(Literal::Int(n2)),
+                ) if hole_stage.is_none() => Ok(Const(Literal::Int(match op {
+                    Literal::Add => n1 + n2,
+                    Literal::Sub => n1 - n2,
+                    Literal::Mult => n1 * n2,
+                    Literal::Div => n1 / n2,
+                    _ => return no_reduction_err,
+                }))),
+                App(box Lam(x, _, t), box v) if hole_stage.is_none() && v.is_value_at(&vec![]) => {
+                    Ok(t.subst_term(x, v))
+                }
+                StageApp(box StageLam(alpha, box v), stage)
+                    if hole_stage.is_none() && v.is_value_at(&vec![]) =>
+                {
+                    Ok(v.subst_stage(alpha, stage))
+                }
+                Escape(stage_var1, box Code(stage_var2, box v))
+                    if hole_stage.is_some()
+                        && hole_stage.clone().unwrap() == stage_var1
+                        && stage_var1 == stage_var2
+                        && v.is_value_at(&vec![stage_var1.clone()]) =>
+                {
+                    Ok(v)
+                }
+                _ => no_reduction_err,
+            }
+        })
     }
 }
 
@@ -60,7 +92,7 @@ fn reduce_context(
         rule(term, hole_stage)
     } else if stage.is_empty() {
         match term {
-            App(box v, box t) if is_value(&v, &vec![]) => Ok(App(
+            App(box v, box t) if v.is_value_at(&vec![]) => Ok(App(
                 Box::new(v),
                 Box::new(reduce_context(t, vec![], hole_stage, rule)?),
             )),
@@ -94,40 +126,4 @@ fn reduce_context(
             _ => unreachable!(),
         }
     }
-}
-
-pub fn reduce(term: Term) -> Result<Term, String> {
-    use Term::*;
-    reduce_context(term, vec![], None, |term, hole_stage| {
-        let no_reduction_err = Err(format!("no reduction for {}", term));
-        match term {
-            App(
-                box App(box Const(op), box Const(Literal::Int(n1))),
-                box Const(Literal::Int(n2)),
-            ) if hole_stage.is_none() => Ok(Const(Literal::Int(match op {
-                Literal::Add => n1 + n2,
-                Literal::Sub => n1 - n2,
-                Literal::Mult => n1 * n2,
-                Literal::Div => n1 / n2,
-                _ => return no_reduction_err,
-            }))),
-            App(box Lam(x, _, t), box v) if hole_stage.is_none() && is_value(&v, &vec![]) => {
-                Ok(t.subst_term(x, v))
-            }
-            StageApp(box StageLam(alpha, box v), stage)
-                if hole_stage.is_none() && is_value(&v, &vec![]) =>
-            {
-                Ok(v.subst_stage(alpha, stage))
-            }
-            Escape(stage_var1, box Code(stage_var2, box v))
-                if hole_stage.is_some()
-                    && hole_stage.clone().unwrap() == stage_var1
-                    && stage_var1 == stage_var2
-                    && is_value(&v, &vec![stage_var1.clone()]) =>
-            {
-                Ok(v)
-            }
-            _ => no_reduction_err,
-        }
-    })
 }
