@@ -51,16 +51,6 @@ fn reduce_context(
             App(box v1, box v2) if v1.is_value_at(&vec![]) && v2.is_value_at(&vec![]) => {
                 rule(App(Box::new(v1), Box::new(v2)))
             }
-            App(box v1, box v2) => {
-                eprintln!(
-                    "{} {}, {} {}",
-                    v1,
-                    v1.is_value_at(&vec![]),
-                    v2,
-                    v2.is_value_at(&vec![])
-                );
-                no_reduction_err
-            }
             Code(alpha, box t) if !t.is_value_at(&vec![alpha.clone()]) => Ok(Code(
                 alpha.clone(),
                 Box::new(reduce_context(t, &vec![alpha.clone()], rule)?),

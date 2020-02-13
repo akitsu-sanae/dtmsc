@@ -35,7 +35,7 @@ impl Term {
                 }
                 StageLam(_, box ref v) => v.is_value_at(stage),
                 StageApp(box ref v, _) => v.is_value_at(stage),
-                Escape(ref alpha, box ref v) | CSP(ref alpha, box ref v) => {
+                Escape(ref alpha, box ref v) if stage.len() != 1 => {
                     let mut stage = stage.clone();
                     if let Some(alpha_) = stage.pop() {
                         alpha == &alpha_ && v.is_value_at(&stage)
@@ -43,6 +43,15 @@ impl Term {
                         false
                     }
                 }
+                CSP(ref alpha, box ref v) => {
+                    let mut stage = stage.clone();
+                    if let Some(alpha_) = stage.pop() {
+                        alpha == &alpha_ && v.is_value_at(&stage)
+                    } else {
+                        false
+                    }
+                }
+                _ => false,
             }
         }
     }
