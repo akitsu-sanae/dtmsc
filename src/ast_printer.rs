@@ -24,8 +24,8 @@ impl fmt::Display for Term {
                 write!(f, "(lam {}: {}. {})", ident, ty, t)
             }
             App(box ref t1, box ref t2) => write!(f, "({} {})", t1, t2),
-            Code(StageVar(ref ident), box ref t) => write!(f, "|>{}. {}", ident, t),
-            Escape(StageVar(ref ident), box ref t) => write!(f, "<|{}. {}", ident, t),
+            Code(StageVar(ref ident), box ref t) => write!(f, "(|>{}. {})", ident, t),
+            Escape(StageVar(ref ident), box ref t) => write!(f, "(<|{}. {})", ident, t),
             StageLam(StageVar(ref ident), box ref t) => write!(f, "(LAM {}. {})", ident, t),
             StageApp(box ref t, ref stage) => {
                 let mut stage_iter = stage.iter();
