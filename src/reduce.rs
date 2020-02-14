@@ -6,16 +6,6 @@ impl Term {
         reduce_context(self, &vec![], |term| {
             let no_reduction_err = Err(format!("no reduction for {}", term));
             match term {
-                App(
-                    box App(box Const(op), box Const(Literal::Int(n1))),
-                    box Const(Literal::Int(n2)),
-                ) => Ok(Const(Literal::Int(match op {
-                    Literal::Add => n1 + n2,
-                    Literal::Sub => n1 - n2,
-                    Literal::Mult => n1 * n2,
-                    Literal::Div => n1 / n2,
-                    _ => return no_reduction_err,
-                }))),
                 App(box Lam(x, _, t), box v) if v.is_value_at(&vec![]) => Ok(t.subst_term(x, v)),
                 StageApp(box StageLam(alpha, box v), stage) if v.is_value_at(&vec![]) => {
                     Ok(v.subst_stage(alpha, stage))
@@ -40,6 +30,18 @@ fn reduce_context(
     let no_reduction_err = Err(format!("no reduction for {} at {:?}", term, stage));
     if stage.is_empty() {
         match term {
+            App(
+                // builtin
+                box App(box Const(op), box Const(Literal::Int(n1))),
+                box Const(Literal::Int(n2)),
+            ) => Ok(Const(Literal::Int(match op {
+                Literal::Add => n1 + n2,
+                Literal::Sub => n1 - n2,
+                Literal::Mult => n1 * n2,
+                Literal::Div => n1 / n2,
+                _ => return no_reduction_err,
+            }))),
+
             App(box t1, box t2) if !t1.is_value_at(&vec![]) => Ok(App(
                 Box::new(reduce_context(t1, &vec![], rule)?),
                 Box::new(t2),
