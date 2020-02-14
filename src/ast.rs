@@ -3,7 +3,8 @@ pub mod printer;
 pub mod subst;
 pub mod util;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+use std::hash::Hash;
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TermVar(pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq)]

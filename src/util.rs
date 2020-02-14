@@ -10,3 +10,19 @@ pub fn fresh_ident() -> String {
     *count = *count + 1;
     res
 }
+
+pub fn input_yes_or_no(msg: &str) -> bool {
+    eprint!("{}", msg);
+    loop {
+        use std::io::stdin;
+        let stdin = stdin();
+        let mut line = String::new();
+        stdin.read_line(&mut line).unwrap();
+        match &line.trim() {
+            &"y" => return true,
+            &"n" => return false,
+            _ => (),
+        }
+        eprint!("answer 'y' or 'no': ");
+    }
+}

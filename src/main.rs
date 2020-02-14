@@ -7,6 +7,8 @@ extern crate peg;
 
 mod ast;
 mod reduce;
+mod type_check;
+mod util;
 
 fn main() {
     use std::io::Read;
@@ -21,15 +23,23 @@ fn main() {
             let stdout = stdout();
             let mut out = BufWriter::new(stdout.lock());
             writeln!(out, "input term: {}", term).unwrap();
-            while !term.is_value_at(&vec![]) {
-                term = match term.reduce() {
-                    Ok(term) => term,
-                    Err(msg) => {
-                        eprintln!("{}", msg);
-                        break;
+            match term.type_check(&vec![]) {
+                Ok(ty) => {
+                    eprintln!("given term has `{}` type", ty);
+                    while !term.is_value_at(&vec![]) {
+                        term = match term.reduce() {
+                            Ok(term) => term,
+                            Err(msg) => {
+                                eprintln!("{}", msg);
+                                break;
+                            }
+                        };
+                        writeln!(out, "=> {}", term).unwrap();
                     }
-                };
-                writeln!(out, "=> {}", term).unwrap();
+                }
+                Err(err) => {
+                    eprintln!("{}", err);
+                }
             }
         }
         Err(err) => {

@@ -1,17 +1,5 @@
-use crate::ast::*;
+use crate::{ast::*, util::fresh_ident};
 use peg;
-use std::sync::Mutex;
-
-lazy_static! {
-    static ref IDENT_COUNT: Mutex<i32> = Mutex::new(0);
-}
-
-fn fresh_ident() -> String {
-    let ref mut count = *IDENT_COUNT.lock().unwrap();
-    let res = format!("<dummy{}>", count);
-    *count = *count + 1;
-    res
-}
 
 pub fn pick_token(buf: &str) -> String {
     let buf = buf.trim_start();
