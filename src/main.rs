@@ -6,9 +6,6 @@ extern crate lazy_static;
 extern crate peg;
 
 mod ast;
-mod ast_printer;
-mod ast_util;
-mod parser;
 mod reduce;
 
 fn main() {
@@ -18,7 +15,7 @@ fn main() {
     let mut buf = String::new();
     f.read_to_string(&mut buf).expect("cannot read file");
 
-    match parser::term(&buf) {
+    match ast::parser::term(&buf) {
         Ok(mut term) => {
             use std::io::{stdout, BufWriter, Write};
             let stdout = stdout();
@@ -47,7 +44,7 @@ fn main() {
             });
             eprintln!(
                 "  found   : \"{}\"",
-                parser::pick_token(&buf[err.location.offset..])
+                ast::parser::pick_token(&buf[err.location.offset..])
             );
         }
     }

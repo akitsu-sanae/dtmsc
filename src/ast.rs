@@ -1,3 +1,8 @@
+pub mod parser;
+pub mod printer;
+pub mod subst;
+pub mod util;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TermVar(pub String);
 

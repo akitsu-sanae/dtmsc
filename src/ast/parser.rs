@@ -47,7 +47,7 @@ pub fn pick_token(buf: &str) -> String {
     }
 }
 
-peg::parser!(grammar parser() for str {
+peg::parser!(grammar rules() for str {
 
 pub rule term() -> Term
     = apply_stage_term()
@@ -156,7 +156,7 @@ rule LBRACKET() = "[" __
 rule RBRACKET() = "]" __
 });
 
-pub use parser::*;
+pub use rules::*;
 
 #[test]
 fn term_test() {
