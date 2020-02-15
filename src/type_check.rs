@@ -104,6 +104,44 @@ fn type_check_impl(
                 Err(format!("stage for CSP cannot be empty"))
             }
         }
+
+        Let(ref x, box ref ty, box ref t1, box ref t2) => type_check_impl(
+            &App(
+                Box::new(Lam(x.clone(), Box::new(ty.clone()), Box::new(t2.clone()))),
+                Box::new(t1.clone()),
+            ),
+            stage,
+            env,
+        ),
+
+        Fix(ref x, box ref ty, box ref t) => {
+            let mut env = env.clone();
+            env.insert(x.clone(), (ty.clone(), stage.clone()));
+            let ret_ty = type_check_impl(t, stage, &env)?;
+            if input_yes_or_no(&format!("are {} and {} same? (y/n): ", ty, ret_ty)) {
+                Ok(ret_ty)
+            } else {
+                Err(format!("{} and {} must match", ty, ret_ty))
+            }
+        }
+        Ifz(box ref cond, box ref t1, box ref t2) => {
+            let cond_ty = type_check_impl(cond, stage, env)?;
+            if Type::Int == cond_ty {
+                let ty1 = type_check_impl(t1, stage, env)?;
+                let ty2 = type_check_impl(t2, stage, env)?;
+                if input_yes_or_no(&format!("are {} and {} same? (y/n): ", ty1, ty2)) {
+                    Ok(ty1)
+                } else {
+                    Err(format!("{} and {} must match", ty1, ty2))
+                }
+            } else {
+                Err(format!("condition must be integer, but {}", cond_ty))
+            }
+        }
+        _ => {
+            eprintln!("unimplemented : {}", term);
+            unimplemented!()
+        }
     }
 }
 

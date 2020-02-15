@@ -19,6 +19,11 @@ pub enum Literal {
     Sub,
     Mult,
     Div,
+
+    Nil,
+    Cons,
+    Head,
+    Tail,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,6 +37,10 @@ pub enum Term {
     StageLam(StageVar, Box<Term>),
     StageApp(Box<Term>, Stage),
     CSP(StageVar, Box<Term>),
+
+    Let(TermVar, Box<Type>, Box<Term>, Box<Term>),
+    Fix(TermVar, Box<Type>, Box<Term>),
+    Ifz(Box<Term>, Box<Term>, Box<Term>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

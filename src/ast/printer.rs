@@ -10,6 +10,11 @@ impl fmt::Display for Literal {
             Sub => write!(f, "-"),
             Mult => write!(f, "*"),
             Div => write!(f, "/"),
+
+            Nil => write!(f, "nil"),
+            Cons => write!(f, "cons"),
+            Head => write!(f, "head"),
+            Tail => write!(f, "tail"),
         }
     }
 }
@@ -38,7 +43,13 @@ impl fmt::Display for Term {
                 };
                 write!(f, "({}@{{{}}})", t, stage)
             }
-            CSP(StageVar(ref ident), box ref t) => write!(f, "%{}. {}", ident, t),
+            CSP(StageVar(ref ident), box ref t) => write!(f, "(%{}. {})", ident, t),
+
+            Let(TermVar(ref x), box ref ty, box ref t1, box ref t2) => {
+                write!(f, "let({}: {}, {}, {})", x, ty, t1, t2)
+            }
+            Fix(TermVar(ref x), box ref ty, box ref t) => write!(f, "(fix {}: {}. {})", x, ty, t),
+            Ifz(box ref cond, box ref t1, box ref t2) => write!(f, "ifz({}, {}, {})", cond, t1, t2),
         }
     }
 }

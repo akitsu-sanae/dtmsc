@@ -58,16 +58,23 @@ rule factor_term() -> Term
     / ESCAPE() ident:ident() DOT() t:term() { Term::Escape(StageVar(ident), Box::new(t)) }
     / STAGE_LAM() ident:ident() DOT() t:term() { Term::StageLam(StageVar(ident), Box::new(t)) }
     / CSP() ident:ident() DOT() t:term() {Term::CSP(StageVar(ident), Box::new(t))}
+
+    / LET() LPAREN() x:ident() COLON() ty:type_() COMMA() t1:term() COMMA() t2:term() RPAREN() {
+        Term::Let(TermVar(x), Box::new(ty), Box::new(t1), Box::new(t2))
+    }
+    / FIX() x:ident() COLON() ty:type_() DOT() t:term() { Term::Fix(TermVar(x), Box::new(ty), Box::new(t)) }
+    / IFZ() LPAREN() cond:term() COMMA() t1:term() COMMA() t2:term() RPAREN() { Term::Ifz(Box::new(cond), Box::new(t1), Box::new(t2)) }
     / n:number() { Term::Const(Literal::Int(n)) }
     / PLUS() { Term::Const(Literal::Add) }
     / MINUS() { Term::Const(Literal::Sub) }
     / AST() { Term::Const(Literal::Mult) }
     / SLASH() { Term::Const(Literal::Div) }
+    / NIL() { Term::Const(Literal::Nil) }
+    / CONS() { Term::Const(Literal::Cons) }
+    / HEAD() { Term::Const(Literal::Head) }
+    / TAIL() { Term::Const(Literal::Tail) }
     / ident:ident() { Term::Var(TermVar(ident)) }
-    / paren_term()
-
-rule paren_term() -> Term
-  = LPAREN() t:term() RPAREN() { t }
+    / LPAREN() t:term() RPAREN() { t }
 
 pub rule kind() -> Kind
   = AST() {  Kind::ProperType }
@@ -97,6 +104,7 @@ rule factor_type() -> Type
   / PI() ident:ident() COLON() ty1:type_() DOT() ty2:type_() {
       Type::DepFun(TermVar(ident), Box::new(ty1), Box::new(ty2))
   }
+  / LPAREN() ty:type_() RPAREN() { ty }
 
 rule stage() -> Vec<StageVar>
   = LBRACE() head:ident() tail:(COMMA() i:ident() {i})* RBRACE() {
@@ -121,6 +129,13 @@ rule FORALL() = "forall" __
 rule LAM() = "lam" __
 rule STAGE_LAM() = "LAM" __
 rule PI() = "Pi" __
+rule IFZ() = "ifz" __
+rule LET() = "let" __
+rule FIX() = "fix" __
+rule NIL() = "nil" __
+rule CONS() = "cons" __
+rule TAIL() = "tail" __
+rule HEAD() = "head" __
 
 rule PLUS() = "+" __
 rule MINUS() = "-" __
@@ -184,7 +199,28 @@ fn term_test() {
             Box::new(Term::Const(Literal::Int(42)))
         ))
     );
+
+    assert_eq!(
+        term("let(n: int, 42, n)"),
+        Ok(Term::Let(
+            TermVar("n".to_string()),
+            Box::new(Type::Int),
+            Box::new(Term::Const(Literal::Int(42))),
+            Box::new(Term::Var(TermVar("n".to_string())))
+        ))
+    );
+
+    assert_eq!(
+        term("ifz(n, 42, n)"),
+        Ok(Term::Ifz(
+            Box::new(Term::Var(TermVar("n".to_string()))),
+            Box::new(Term::Const(Literal::Int(42))),
+            Box::new(Term::Var(TermVar("n".to_string())))
+        ))
+    );
+
     assert_eq!(term("123"), Ok(Term::Const(Literal::Int(123))));
+
     assert_eq!(
         term("f 42"),
         Ok(Term::App(
