@@ -22,7 +22,7 @@ fn main() {
             use std::io::{stdout, BufWriter, Write};
             let stdout = stdout();
             let mut out = BufWriter::new(stdout.lock());
-            writeln!(out, "input term: {}", term).unwrap();
+            writeln!(out, "{}", term).unwrap();
             match term.type_check(&vec![]) {
                 Ok(ty) => {
                     eprintln!("given term has `{}` type", ty);
@@ -34,7 +34,7 @@ fn main() {
                                 break;
                             }
                         };
-                        writeln!(out, "=> {}", term).unwrap();
+                        writeln!(out, "=>\n{}", term).unwrap();
                     }
                 }
                 Err(err) => {

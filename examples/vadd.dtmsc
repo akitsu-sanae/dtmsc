@@ -3,6 +3,16 @@ let(
   fix f:forall a. (Pi n:int. (|>a. vector[n]) -> ((|>a. vector[n]) -> |>a. vector[n])).
     LAM a.
       lam n:int. lam v1: |>a. vector[n]. lam v2: |>a. vector[n].
-        ifz(n, |>a. nil, 42),
+        ifz(
+            n,
+            |>a. nil,
+            let(
+                t1: vector[n],
+                tail (<|a. v1),
+                let(
+                    t2: vector[n],
+                    tail(<|a. v2),
+                    ((cons (+ (head (<|a. v1)) (head (<|a. v2))))
+                     (<|a. ((f (- n 1)) (|>a. t1) (|>a. t2))))))),
   vadd1)
 

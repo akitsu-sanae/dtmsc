@@ -19,19 +19,44 @@ impl fmt::Display for Literal {
     }
 }
 
-impl fmt::Display for Term {
+struct TermWithIndent<'a>(&'a Term, usize);
+
+impl<'a> fmt::Display for TermWithIndent<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Term::*;
-        match self {
+        let TermWithIndent(ref term, indent) = self;
+        match term {
             Const(lit) => write!(f, "{}", lit),
             Var(TermVar(ref ident)) => write!(f, "{}", ident),
-            Lam(TermVar(ref ident), box ref ty, box ref t) => {
-                write!(f, "(lam {}: {}. {})", ident, ty, t)
+            Lam(TermVar(ref ident), box ref ty, box ref t) => write!(
+                f,
+                "(lam\n{3:indent$}{}: {}.\n{3:indent$}{})",
+                ident,
+                ty,
+                TermWithIndent(t, indent + 2),
+                "",
+                indent = indent + 2,
+            ),
+            App(box ref t1, box ref t2) => write!(
+                f,
+                "({} {})",
+                TermWithIndent(t1, indent + 2),
+                TermWithIndent(t2, indent + 2),
+            ),
+            Code(StageVar(ref ident), box ref t) => {
+                write!(f, "(|>{}. {})", ident, TermWithIndent(t, indent + 2))
             }
-            App(box ref t1, box ref t2) => write!(f, "({} {})", t1, t2),
-            Code(StageVar(ref ident), box ref t) => write!(f, "(|>{}. {})", ident, t),
-            Escape(StageVar(ref ident), box ref t) => write!(f, "(<|{}. {})", ident, t),
-            StageLam(StageVar(ref ident), box ref t) => write!(f, "(LAM {}. {})", ident, t),
+            Escape(StageVar(ref ident), box ref t) => {
+                write!(f, "(<|{}. {})", ident, TermWithIndent(t, indent + 2))
+            }
+            StageLam(StageVar(ref ident), box ref t) => write!(
+                f,
+                "(LAM {}.\n{2:indent$}{})",
+                ident,
+                TermWithIndent(t, indent + 2),
+                "",
+                indent = indent + 2
+            ),
             StageApp(box ref t, ref stage) => {
                 let mut stage_iter = stage.iter();
                 let stage = if let Some(StageVar(ref head)) = stage_iter.next() {
@@ -45,12 +70,41 @@ impl fmt::Display for Term {
             }
             CSP(StageVar(ref ident), box ref t) => write!(f, "(%{}. {})", ident, t),
 
-            Let(TermVar(ref x), box ref ty, box ref t1, box ref t2) => {
-                write!(f, "let({}: {}, {}, {})", x, ty, t1, t2)
-            }
-            Fix(TermVar(ref x), box ref ty, box ref t) => write!(f, "(fix {}: {}. {})", x, ty, t),
-            Ifz(box ref cond, box ref t1, box ref t2) => write!(f, "ifz({}, {}, {})", cond, t1, t2),
+            Let(TermVar(ref x), box ref ty, box ref t1, box ref t2) => write!(
+                f,
+                "let(\n{4:indent$}{}: {},\n{4:indent$}{},\n{4:indent$}{})",
+                x,
+                ty,
+                TermWithIndent(t1, indent + 2),
+                TermWithIndent(t2, indent + 2),
+                "",
+                indent = indent + 2,
+            ),
+            Fix(TermVar(ref x), box ref ty, box ref t) => write!(
+                f,
+                "(fix\n{3:indent$}{}: {}.\n{3:indent$}{})",
+                x,
+                ty,
+                TermWithIndent(t, indent + 2),
+                "",
+                indent = indent + 2
+            ),
+            Ifz(box ref cond, box ref t1, box ref t2) => write!(
+                f,
+                "ifz(\n{3:indent$}{},\n{3:indent$}{},\n{3:indent$}{})",
+                TermWithIndent(cond, indent + 2),
+                TermWithIndent(t1, indent + 2),
+                TermWithIndent(t2, indent + 2),
+                "",
+                indent = indent + 2
+            ),
         }
+    }
+}
+
+impl fmt::Display for Term {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        TermWithIndent(self, 0).fmt(f)
     }
 }
 

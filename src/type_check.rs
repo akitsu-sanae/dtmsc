@@ -45,7 +45,10 @@ fn type_check_impl(
             {
                 let arg_ty = type_check_impl(t2, stage, env)?;
                 if &arg_ty == param_ty
-                    || input_yes_or_no(&format!("are {} and {} same? (y/n): ", arg_ty, param_ty))
+                    || input_yes_or_no(&format!(
+                        "are\n  {} and\n  {}\nsame? (y/n): ",
+                        arg_ty, param_ty
+                    ))
                 {
                     Ok(body_ty.clone().subst_term(x.clone(), t2.clone()))
                 } else {
@@ -118,7 +121,7 @@ fn type_check_impl(
             let mut env = env.clone();
             env.insert(x.clone(), (ty.clone(), stage.clone()));
             let ret_ty = type_check_impl(t, stage, &env)?;
-            if input_yes_or_no(&format!("are {} and {} same? (y/n): ", ty, ret_ty)) {
+            if input_yes_or_no(&format!("are\n  {} and\n  {}\nsame? (y/n): ", ty, ret_ty)) {
                 Ok(ret_ty)
             } else {
                 Err(format!("{} and {} must match", ty, ret_ty))
@@ -129,7 +132,7 @@ fn type_check_impl(
             if Type::Int == cond_ty {
                 let ty1 = type_check_impl(t1, stage, env)?;
                 let ty2 = type_check_impl(t2, stage, env)?;
-                if input_yes_or_no(&format!("are {} and {} same? (y/n): ", ty1, ty2)) {
+                if input_yes_or_no(&format!("are\n  {} and\n  {}\nsame? (y/n): ", ty1, ty2)) {
                     Ok(ty1)
                 } else {
                     Err(format!("{} and {} must match", ty1, ty2))
