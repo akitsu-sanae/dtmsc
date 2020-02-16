@@ -138,10 +138,6 @@ fn type_check_impl(
                 Err(format!("condition must be integer, but {}", cond_ty))
             }
         }
-        _ => {
-            eprintln!("unimplemented : {}", term);
-            unimplemented!()
-        }
     }
 }
 

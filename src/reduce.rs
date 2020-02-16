@@ -66,6 +66,32 @@ fn reduce_context(
             StageApp(box StageLam(alpha, box t), stage) => {
                 rule(StageApp(Box::new(StageLam(alpha, Box::new(t))), stage))
             }
+
+            Let(x, box ty, box t1, box t2) => reduce_context(
+                App(Box::new(Lam(x, Box::new(ty), Box::new(t2))), Box::new(t1)),
+                stage,
+                rule,
+            ),
+            Fix(x, box ty, box t) => {
+                let fix = Fix(x.clone(), Box::new(ty), Box::new(t.clone()));
+                Ok(t.subst_term(x, fix))
+            }
+            Ifz(box cond, box t1, box t2) if cond.is_value_at(&vec![]) => {
+                if let Term::Const(Literal::Int(n)) = cond {
+                    if n == 0 {
+                        Ok(t1)
+                    } else {
+                        Ok(t2)
+                    }
+                } else {
+                    no_reduction_err
+                }
+            }
+            Ifz(box cond, box t1, box t2) => Ok(Ifz(
+                Box::new(reduce_context(cond, stage, rule)?),
+                Box::new(t1),
+                Box::new(t2),
+            )),
             _ => no_reduction_err,
         }
     } else {
