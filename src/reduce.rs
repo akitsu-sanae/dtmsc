@@ -30,8 +30,10 @@ fn reduce_context(
     let no_reduction_err = Err(format!("no reduction for {} at {:?}", term, stage));
     if stage.is_empty() {
         match term {
+            /*
+             builtin constants
+            */
             App(
-                // builtin
                 box App(box Const(op), box Const(Literal::Int(n1))),
                 box Const(Literal::Int(n2)),
             ) => Ok(Const(Literal::Int(match op {

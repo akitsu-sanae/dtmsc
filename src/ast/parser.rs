@@ -69,7 +69,7 @@ rule factor_term() -> Term
     / MINUS() { Term::Const(Literal::Sub) }
     / AST() { Term::Const(Literal::Mult) }
     / SLASH() { Term::Const(Literal::Div) }
-    / NIL() { Term::Const(Literal::Nil) }
+    / NIL() { Term::Const(Literal::Vector(vec![])) }
     / CONS() { Term::Const(Literal::Cons) }
     / HEAD() { Term::Const(Literal::Head) }
     / TAIL() { Term::Const(Literal::Tail) }

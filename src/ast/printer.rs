@@ -12,11 +12,11 @@ impl fmt::Display for Literal {
             Div => write!(f, "/"),
 
             Vector(ref v) => {
-                let mut head = v.clone();
-                let v = head.split_off(1);
-                if head.is_empty() {
-                    write!(f, "[]")
+                if v.is_empty() {
+                    write!(f, "nil")
                 } else {
+                    let mut head = v.clone();
+                    let v = head.split_off(1);
                     write!(f, "[{}", head.pop().unwrap())?;
                     for t in v.iter() {
                         write!(f, ", {}", t)?;
@@ -24,7 +24,6 @@ impl fmt::Display for Literal {
                     write!(f, "]")
                 }
             }
-            Nil => write!(f, "nil"),
             Cons => write!(f, "cons"),
             Head => write!(f, "head"),
             Tail => write!(f, "tail"),

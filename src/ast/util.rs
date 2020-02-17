@@ -18,6 +18,7 @@ impl Term {
         use Term::*;
         if stage.is_empty() {
             match self {
+                Const(Literal::Vector(ts)) => ts.iter().all(|t| t.is_value_at(stage)),
                 Const(_) | Lam(_, _, _) => true,
                 Code(ref alpha, box ref v) => v.is_value_at(&vec![alpha.clone()]),
                 StageLam(_, box ref v) => v.is_value_at(&vec![]),

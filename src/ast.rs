@@ -21,7 +21,6 @@ pub enum Literal {
     Div,
 
     Vector(Vec<Term>),
-    Nil,
     Cons,
     Head,
     Tail,
