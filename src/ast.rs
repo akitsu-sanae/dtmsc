@@ -12,7 +12,7 @@ pub struct StageVar(pub String);
 
 pub type Stage = Vec<StageVar>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Literal {
     Int(i32),
     Add,
@@ -20,6 +20,7 @@ pub enum Literal {
     Mult,
     Div,
 
+    Vector(Vec<Term>),
     Nil,
     Cons,
     Head,
