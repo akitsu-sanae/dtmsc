@@ -6,7 +6,7 @@ let(
         ifz(
             n,
             |>a. nil,
-            let(
+            |>a. let(
                 t1: vector[n],
                 tail (<|a. v1),
                 let(
